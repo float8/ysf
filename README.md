@@ -1,2 +1,2 @@
 # ysf
-文档 http://git.whf0.com/users/sign_in
+文档 http://ysf.whf0.com/

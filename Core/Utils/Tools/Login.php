@@ -111,7 +111,7 @@ class Login
     {
         $data = [
             'ip' => $this->ip,
-            'iuserAgentp' => $this->userAgent,
+            'userAgent' => $this->userAgent,
             'uid' => $value['uid'],
             'expire' => $value['expire'],
         ];

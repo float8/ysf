@@ -233,8 +233,14 @@ class ApiResult
      * @param \Throwable $exception
      * @return $this
      */
-    public function setError($msg = '失败', $code = -1000,  $exception = null )
+    public function setError($msg = '失败', $code = -1000,  \Throwable $exception = null )
     {
+        if(is_object($msg)){
+            $exception = $msg;
+            $msg = $msg->getMessage();
+            $code = $msg->getCode();
+        }
+
         $this->setTime();
         $this->setCode($code);
         $this->setMsg($msg);

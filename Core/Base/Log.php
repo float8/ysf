@@ -276,7 +276,7 @@ class Log
     public static function runTime()
     {
         $runtime = microtime(true) - self::$runTime;
-        self::write(LOG_INFO, $runtime, 'runtime');
+        self::write(LOG_INFO, $runtime, ['line'=>'runtime']);
         //页面执行超时时间
         $time_out = (float)Config::app('yaf.app.time_out');
         if ($runtime < $time_out) {

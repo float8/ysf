@@ -68,7 +68,7 @@ class ClientServer
     }
 
     /**
-     * @desc 获取客户端Scheme(
+     * @desc 获取客户端Scheme
      * @return string
      */
     public static function getScheme() {

@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>Exception</title>
+    <style>
+        table td.text-right{
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+<table class="table table-striped">
+    <tr>
+        <td class="text-right">Fatal error :</td>
+        <td><?php echo $message;?></td>
+    </tr>  <tr>
+        <td class="text-right">code :</td>
+        <td><?php echo $code;?></td>
+    </tr>
+    <tr>
+        <td class="text-right">line :</td>
+        <td><?php echo $line;?></td>
+    </tr>
+    <tr>
+        <td class="text-right">file :</td>
+        <td><?php echo $file;?></td>
+    </tr>
+    <tr>
+        <td class="text-right">Stack trace :</td>
+        <td><pre style="line-height: 25px;"><?php echo $trace;?></pre></td>
+    </tr>
+</table>
+</body>
+</html>

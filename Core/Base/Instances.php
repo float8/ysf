@@ -42,7 +42,7 @@ class Instances
             return ;
         }
 
-        if(empty($section)){
+        if(empty($sections)){
             static::$resources[$key] = $val;
             return ;
         }
@@ -61,7 +61,7 @@ class Instances
         if(empty($key)){
             return null;
         }
-        $key = empty($section) ? $key : $key.'.'.self::sections($sections);
+        $key = empty($sections) ? $key : $key.'.'.self::sections($sections);
         return Fun::get(static::$resources, $key);
     }
 

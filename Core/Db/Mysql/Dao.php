@@ -71,7 +71,7 @@ abstract class Dao extends \Core\Db\PDO
      * @desc 使用模型
      * @var boolean
      */
-    private $_useModelModePrefer = null;
+    private $_useModelModePrefer = PDO::FETCH_NAMED;
 
     /**
      * {@inheritDoc}
@@ -445,27 +445,22 @@ abstract class Dao extends \Core\Db\PDO
     }
 
     /**
-     * @desc 获取是否已模型方式获取数据
-     * @param $value
-     * @return boolean
-     */
-    public function getModelMode($value = null)
-    {
-        return is_null($value) ? (is_null($this->_useModelModePrefer) ? $this->_useModelMode : $this->_useModelModePrefer) : $value;
-    }
-
-    /**
      * @desc 为语句设置为Model的获取模式。
      * @param $value
      * @return $this
      */
     public function setModelMode($value)
     {
-        $settModelMode = $this->getModelMode($value);//获取是否使用模型获取数据值
-        if ($settModelMode) {
-            $this->callPrepareFunc('setFetchMode', [PDO::FETCH_CLASS, $this->modelName()]);
+        if(!empty($value)){
+            $mode = is_array($value) ? $value : [$value];
+        } else if($this->_useModelMode){
+            $mode = [PDO::FETCH_CLASS, $this->modelName()];
+        } else {
+            $mode = [$this->_useModelModePrefer];
         }
-        $this->_useModelModePrefer = null;
+
+        $this->callPrepareFunc('setFetchMode', $mode);
+
         return $this;
     }
 

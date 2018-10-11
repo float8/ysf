@@ -71,7 +71,7 @@ abstract class Dao extends \Core\Db\PDO
      * @desc 使用模型
      * @var boolean
      */
-    private $_useModelModePrefer = PDO::FETCH_NAMED;
+    private $_useModelModePrefer = null;
 
     /**
      * {@inheritDoc}
@@ -103,6 +103,7 @@ abstract class Dao extends \Core\Db\PDO
         $method = "_{$method}Before";
         if ( method_exists($this->model(), $method) ) {
             $this->model()->$method($params);
+            $this->_setSql('data', $params);
         }
         return $this;
     }
@@ -168,23 +169,24 @@ abstract class Dao extends \Core\Db\PDO
 
     /**
      * @desc 添加
-     * @param mixed $columns
-     * @param string $table
+     * @param null $columns
+     * @param string|null $table
+     * @param string $method
      * @return mixed
      */
-    public function insert($columns = null, string $table = null)
+    public function insert($columns = null, string $table = null, $method = 'insert')
     {
         $sql = null;
         $params = [];
         $data = is_array($columns) ? $columns : [];//插入的数据
         $this->callUserFunc($columns);//如果第一个参数为函数时执行
-        $this->_before('insert', $data);//执行前执行方法
+        $this->_before($method, $this->_getSql('data',[]));//执行前执行方法
         $this->table($table);//获取表名
         $this->buildInsert();//构建插入语句
         $this->buildData($data);//绑定数据
         $this->buildTable($table);//绑定表名
         $this->build($sql, $params);//构建sql
-        return $this->execute($sql, $params, 'insert');//执行语句
+        return $this->execute($sql, $params, $method);//执行语句
     }
 
     /**
@@ -195,16 +197,7 @@ abstract class Dao extends \Core\Db\PDO
      */
     public function insertAll($columns = null, string $table = null)
     {
-        $sql = null;
-        $params = [];
-        $data = is_array($columns) ? $columns : [];//插入的数据
-        $this->_before('insertAll', $data);//执行前执行方法
-        $this->table($table);//获取表名
-        $this->buildInsert();//构建插入语句
-        $this->buildData($data);//绑定数据
-        $this->buildTable($table);//绑定表名
-        $this->build($sql, $params);//构建sql
-        return $this->execute($sql, $params, 'insertAll');//执行语句
+        return $this->insert($columns, $table, 'insertAll');
     }
 
     /**
@@ -229,7 +222,7 @@ abstract class Dao extends \Core\Db\PDO
         $sql = '';
         $data = is_array($columns) ? $columns : [];
         $this->callUserFunc($columns);//如果第一个参数为函数时执行
-        $this->_before('update', $data);//执行前执行方法
+        $this->_before('update', $this->_getSql('data',[]));//执行前执行方法
         $this->table($table);//获取表名
         $this->buildUpdate();//创建update语句
         $this->buildTable($table);//获取表名
@@ -451,15 +444,19 @@ abstract class Dao extends \Core\Db\PDO
      */
     public function setModelMode($value)
     {
-        if(!empty($value)){
+        if (!empty($value)) {
             $mode = is_array($value) ? $value : [$value];
-        } else if($this->_useModelMode){
+        } else if ($this->_useModelMode) {
             $mode = [PDO::FETCH_CLASS, $this->modelName()];
+        } else if (!empty($this->_useModelModePrefer)) {
+            $mode = is_array($this->_useModelModePrefer) ? $this->_useModelModePrefer : [$this->_useModelModePrefer];
         } else {
-            $mode = [$this->_useModelModePrefer];
+            $mode = [PDO::FETCH_NAMED];
         }
-
+        //设置获取模式
         $this->callPrepareFunc('setFetchMode', $mode);
+        //清空数据模式
+        $this->_useModelModePrefer = null;
 
         return $this;
     }

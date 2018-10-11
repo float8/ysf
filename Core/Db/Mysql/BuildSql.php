@@ -432,7 +432,7 @@ trait BuildSql
      * @param string $default
      * @return mixed
      */
-    private function _getSql($key, $default = '')
+    protected function _getSql($key, $default = '')
     {
         return isset($this->_sql[$key]) ? $this->_sql[$key] : $default;
     }
@@ -444,7 +444,7 @@ trait BuildSql
      * @param string $action push/merge
      * @return $this
      */
-    private function _setSql($key, $value = null, $action = null)
+    protected function _setSql($key, $value = null, $action = null)
     {
         //清空
         if(empty($key) && empty($value)){

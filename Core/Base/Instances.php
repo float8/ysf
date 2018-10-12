@@ -23,7 +23,7 @@ class Instances
      * @param array $sections
      * @return string
      */
-    private static function sections(array $sections = []):string
+    private static function sections(array $sections = [])
     {
         $section = implode('', $sections);
         $section = md5($section);
@@ -36,7 +36,7 @@ class Instances
      * @param mixed $val
      * @param array $sections
      */
-    public static function set(string $key, $val, array $sections = []):void
+    public static function set(string $key, $val, array $sections = [])
     {
         if(empty($key) || empty($val)){
             return ;

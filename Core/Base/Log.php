@@ -135,11 +135,8 @@ class Log
             return ['file'=>$_logFile($file),'line'=>$line];
         }
         //根据 debug_backtrace 获取
-        if(empty($trace)){
-            $trace = debug_backtrace();
-            return ['file'=>$_logFile($trace[0]['file']),'line'=>$trace[0]['line']];
-        }
-        return [];
+        $trace = debug_backtrace();
+        return ['file'=>$_logFile($trace[0]['file']),'line'=>$trace[0]['line']];
     }
 
     /**

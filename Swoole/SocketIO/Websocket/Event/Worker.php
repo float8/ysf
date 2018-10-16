@@ -57,6 +57,7 @@ trait Worker
     private function onMessage() {
         $this->server->on('message', function (\Swoole\WebSocket\Server $server, $frame) {
             $packet = Decoder::decodeString($frame->data);
+            print_r($packet);
             if(empty($packet)){
                 return ;
             }

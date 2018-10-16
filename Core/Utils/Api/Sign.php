@@ -192,12 +192,24 @@ class Sign
     {
         $requestType = ucfirst($this->requestType);
         $method = "getRequest{$requestType}";
-        $result = [];
         if (method_exists($this, $method)) {
             $result = $this->$method();
             $result = is_array($result) ? $result : [];
+            return $result;
         }
-        return $result;
+        switch (strtolower($requestType)){
+            case 'post':
+                return $_POST;
+                break;
+            case 'get':
+                return $_GET;
+                break;
+            case 'request':
+                return $_REQUEST;
+                break;
+            default :
+                return [];
+        }
     }
 
     /**

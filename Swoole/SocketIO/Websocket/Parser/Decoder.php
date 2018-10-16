@@ -18,7 +18,7 @@ class Decoder
         $packets = \Swoole\SocketIO\Parser::$packets;
         if($str[0] == $packets['ping']){
             return ['type'=>'ping', 'data'=>substr($str, 1)];
-        }
+        }echo $str[0],"\n";
         if($str[0] == $packets['message'] && $str[1] == Parser::EVENT){
             $packet = json_decode(substr($str, 2), true);
             $data = isset($packet[1]) ? $packet[1] : null;

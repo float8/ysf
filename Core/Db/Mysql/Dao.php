@@ -564,7 +564,7 @@ abstract class Dao extends \Core\Db\PDO
 
     /**
      * @desc 绑定模型
-     * @param bool $value
+     * @param mixed $value
      * @return $this
      */
     public function bindModel($value = null)
@@ -575,7 +575,7 @@ abstract class Dao extends \Core\Db\PDO
 
     /**
      * @desc 实例化模型
-     * @return null
+     * @return Model_Abstract
      */
     public function model()
     {

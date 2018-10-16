@@ -8,6 +8,7 @@
 
 namespace Swoole\SocketIO\Websocket;
 
+use Core\Base\Config;
 use Core\Utils\Tools\Fun;
 use Swoole\SocketIO\Websocket\Event\Master;
 use Swoole\SocketIO\Websocket\Event\Worker;
@@ -114,7 +115,7 @@ class Server
      * @return $this
      */
     public function set(){
-        $set = Fun::config('webim.env.set');
+        $set = Config::env('webim.set');
         if($this->daemonize) {
             $set['daemonize'] = 1;
         }
@@ -171,18 +172,18 @@ class Server
         call_user_func([$event, 'setServer'], $this);
 
         //设置swoole对象
-        $swoole = Fun::getArrayValue($data, 'swoole');
+        $swoole = Fun::get($data, 'swoole');
         $swoole = empty($swoole) ? $this->server : $swoole;
         call_user_func([$event, 'setSwoole'], $swoole);
 
         //设置连接编号
-        $fd = Fun::getArrayValue($data, 'fd');
+        $fd = Fun::get($data, 'fd');
         if(!empty($fd)) {
             call_user_func([$event, 'setFd'], $fd);
         }
 
         //设置数据
-        $data = Fun::getArrayValue($data, 'data');
+        $data = Fun::get($data, 'data');
         if(!empty($data)){
             call_user_func([$event, 'setData'], $data);
         }
@@ -205,7 +206,7 @@ class Server
             ->onMessage();//消息事件
 
         //设置进程名称
-        cli_set_process_title(Fun::config('webim.env.server.process_title'));
+        cli_set_process_title(Config::env('webim.server.process_title'));
         //启动服务
         $this->server->start();
     }

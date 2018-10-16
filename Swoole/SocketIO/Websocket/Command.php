@@ -9,7 +9,7 @@
 namespace Swoole\SocketIO\Websocket;
 
 
-use Core\Utils\Tools\Fun;
+use Core\Base\Config;
 
 trait Command
 {
@@ -34,7 +34,7 @@ trait Command
      * @return bool|string
      */
     private function getPid(){
-        $pid_file = Fun::config('webim.env.set.pid_file');
+        $pid_file = Config::env('webim.set.pid_file');
         if(!file_exists($pid_file)){
             return false;
         }
@@ -105,13 +105,13 @@ trait Command
         }
 
         echo "------------------------------------------------------------\n";
-        echo " server: ", Fun::config('webim.env.server.host'), ":", Fun::config('webim.env.server.port'), "\n";
+        echo " server: ", Config::env('webim.server.host'), ":", Config::env('webim.server.port'), "\n";
         echo "------------------------------------------------------------\n";
-        echo " server name: ", Fun::config('webim.env.server.process_title'), "\n";
+        echo " server name: ", Config::env('webim.server.process_title'), "\n";
         echo "------------------------------------------------------------\n";
-        echo " work进程数: ", Fun::config('webim.env.set.worker_num'), "\n";
+        echo " work进程数: ", Config::env('webim.set.worker_num'), "\n";
         echo "------------------------------------------------------------\n";
-        echo " reactor线程数: ", Fun::config('webim.env.set.reactor_num'), "\n";
+        echo " reactor线程数: ", Config::env('webim.set.reactor_num'), "\n";
         echo "------------------------------------------------------------\n";
         die;
     }

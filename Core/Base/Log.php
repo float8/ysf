@@ -84,22 +84,22 @@ class Log
         $trace = self::getTrace($message, $trace);//$trace 信息
         $traceString = is_object($message) ? $message->getTraceAsString() : ''; //获取trace字符串
         $message = is_object($message) ? $message->getMessage() : $message;//消息内容
-        $log_local = Config::app('yaf.app.log_local');
-
-        $line = Fun::get($trace, 'line');//跟踪的行号
-        $file = Fun::get($trace, 'file');//跟踪的文件
-        $location = empty($file) ? "[{$line}]" : "[{$line}:{$file}]";//位置
-        $message = empty($traceString) ? $message : $message."\n".$traceString;
-        $message = date("Y-m-d H:i:s") . " {$logid} " . PROJECT_NAME . " {$location} {$message}";//消息
         //当应用存在钩子时触发
         if(Hook::existAppHook('Log')) {
             return Hook::triggerApp('Log', 'write',[
+                'level'=>$priority,
                 'logid'=>$logid,
                 'trace'=>$trace,
                 'traceString'=>$traceString,
                 'message'=>$message,
             ]);
         }
+        $log_local = Config::app('yaf.app.log_local');
+        $line = Fun::get($trace, 'line');//跟踪的行号
+        $file = Fun::get($trace, 'file');//跟踪的文件
+        $location = empty($file) ? "[{$line}]" : "[{$line}:{$file}]";//位置
+        $message = empty($traceString) ? $message : $message."\n".$traceString;
+        $message = date("Y-m-d H:i:s") . " {$logid} " . PROJECT_NAME . " {$location} {$message}";//消息
         //写入系统日志
         return syslog($priority | $log_local, $message);
     }
@@ -129,13 +129,13 @@ class Log
             return ['file'=>$_logFile($message->getFile()),'line'=>$message->getLine()];
         }
         //根据$trace获取文件及行号
-        if(is_string($message) && !empty($trace) && is_array($trace)){
+        if(!empty($trace) && is_array($trace)){
             $file = Fun::get($trace, 'file');
             $line = Fun::get($trace, 'line', 0);
             return ['file'=>$_logFile($file),'line'=>$line];
         }
         //根据 debug_backtrace 获取
-        if(is_string($message) && empty($trace)){
+        if(empty($trace)){
             $trace = debug_backtrace();
             return ['file'=>$_logFile($trace[0]['file']),'line'=>$trace[0]['line']];
         }

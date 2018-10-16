@@ -22,7 +22,7 @@ class Fun
             if( is_object($params) ? !isset($params->$v) : !isset($params[$v]) ) {
                 return $default;
             } else {
-                $params = is_object($params->$v) ? $params->$v : $params[$v];
+                $params = is_object($params) ? $params->$v : $params[$v];
             }
         }
         return $params;

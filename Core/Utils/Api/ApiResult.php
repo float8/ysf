@@ -228,7 +228,7 @@ class ApiResult
 
     /**
      * @desc 默认错误
-     * @param string $msg
+     * @param \Throwable|mixed $msg
      * @param int $code
      * @param \Throwable $exception
      * @return $this
@@ -236,9 +236,8 @@ class ApiResult
     public function setError($msg = '失败', $code = -1000,  \Throwable $exception = null )
     {
         if(is_object($msg)){
-            $exception = $msg;
-            $msg = $msg->getMessage();
             $code = $msg->getCode();
+            $msg = $msg->getMessage();
         }
 
         $this->setTime();

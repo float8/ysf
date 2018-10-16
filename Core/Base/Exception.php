@@ -16,6 +16,6 @@ class Exception extends \Exception
     public function __construct($message, $code = 0)
     {
         parent::__construct($message, $code);
-        Log::write(LOG_NOTICE, $this);//记录错误
+        Log::write(LOG_INFO, $this->getMessage(), ['line'=>$this->getLine(), 'file'=>$this->getFile()]);//记录日志
     }
 }

@@ -82,7 +82,7 @@ class Hook
     }
 
     /**
-     * @desc 除法app的钩子
+     * @desc 触发app的钩子
      * @param string $hookName
      * @param string $method
      * @param array $data

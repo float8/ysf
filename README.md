@@ -2,7 +2,7 @@
 
 作者博客：http://www.whf0.com
 
-文档地址：http://ysf.whf0.com
+文档地址：http://mkd.whf0.com
 
 `Yaf Swoole Framework(Ysf)`框架是一个用来开发`web应用`及`异步通信应用`的框架。
 

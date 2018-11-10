@@ -25,8 +25,8 @@ class Config
      */
     public static function config($configFile)
     {
-        file_exists($configFile) or trigger_error('The application configuration file does not exist', E_USER_ERROR);
-
+        file_exists($configFile) or
+        trigger_error('The application configuration file does not exist', E_USER_ERROR);
         $configs = parse_ini_file($configFile, true);
         if(empty($configs)) {
             return ;

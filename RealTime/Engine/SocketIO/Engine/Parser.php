@@ -16,7 +16,7 @@ trait Parser
      * @desc 数据包类型
      * @var array
      */
-    public $types = [
+    private $types = [
         'open' => 0,
         'close' => 1,
         'ping' => 2,
@@ -43,7 +43,7 @@ trait Parser
      * @param $packet
      * @return mixed
      */
-    public function encodePacket($packet, $supportsBinary = null, $utf8encode = null)
+    private function encodePacket($packet, $supportsBinary = null, $utf8encode = null)
     {
 
 
@@ -88,7 +88,7 @@ trait Parser
      * @param $data
      * @return mixed
      */
-    public function decodePacket($data, $supportsBinary = null, $utf8encode = null)
+    private function decodePacket($data, $supportsBinary = null, $utf8encode = null)
     {
         if (empty($data)) {
             return $this->err;

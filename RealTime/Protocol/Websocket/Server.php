@@ -86,14 +86,15 @@ class Server
             if (isset($this->resetEvents[$event])) {
                 $this->server->on($event, function () use ($event) {
                     $params = func_get_args();
-                    Engine::on(strtolower($event), $params);//执行引擎的事件
-                    $object = Loader::swoole($event) and call_user_func_array([$object, 'execute'], $params); //执行系统事件
+                    $emitter = Engine::on(strtolower($event), $params);//执行引擎的事件
+                    $object = Loader::swoole($event) and
+                    $object->emitter = $emitter and
+                    call_user_func_array([$object, 'execute'], $params); //执行系统事件
                 });
                 continue;
             }
             //执行系统事件
             $object = Loader::swoole($event) and $this->server->on($event, function () use ($event, $object) {
-                $object->engine = Engine::$engine;
                 call_user_func_array([$object, 'execute'], func_get_args()); //执行系统事件
             });
         }

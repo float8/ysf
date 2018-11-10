@@ -302,7 +302,7 @@ class SocketIO extends Base
 
         // if we have a namespace other than `/`
         // we append it followed by a comma `,`
-        if ($packet['nsp'] && '/' !== $packet['nsp']) {
+        if (isset($packet['nsp']) && '/' !== $packet['nsp']) {
             $str .= $packet['nsp'] . ',';
         }
 

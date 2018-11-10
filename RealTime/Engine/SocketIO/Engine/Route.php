@@ -26,10 +26,11 @@ trait Route
 
     /**
      * @desc 路由解析器
-     * @param string $event
+     * @param $nsp
+     * @param null $event
      * @return array
      */
-    private function routeEventParser($event = null)
+    private function routeEventParser($nsp, $event = null)
     {
         [
             'module'=>$module,
@@ -41,7 +42,7 @@ trait Route
             $action :
             str_replace(' ', '', ucwords(trim($event)));//解析action
         //解析 module controller
-        $nsp = parse_url($this->nsp, PHP_URL_PATH);
+        $nsp = parse_url($nsp, PHP_URL_PATH);
         $nsp = preg_replace("/\/(?=\/)/", "\\1", trim($nsp));
         if ($nsp == '/') {
             goto _return;

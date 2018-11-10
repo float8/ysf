@@ -10,7 +10,10 @@ namespace RealTime\Base;
 
 abstract class Controller
 {
-    public $engine;
+    /**
+     * @var \RealTime\Engine\SocketIO\Emitter
+     */
+    public $emitter;
 
     public $route;
 
@@ -23,27 +26,29 @@ abstract class Controller
      */
     public function emit($event)
     {
-        return call_user_func_array([$this->engine, 'emit'], func_get_args());
+        $this->emitter and call_user_func_array([$this->emitter, 'emit'], func_get_args());
+        return $this;
     }
 
     /**
      * @desc emit error
      * @param $data
-     * @return mixed
      */
     public function emitError($data)
     {
-        return call_user_func([$this->engine, 'emitError'], $data);
+        $this->emitter and call_user_func([$this->emitter, 'emitError'], $data);
+        return $this;
     }
 
     /**
      * @desc 指向的链接
      * @param $fd
-     * @return mixed
+     * @return $this
      */
     public function to($fd)
     {
-        return $this->engine->to($fd);
+        $this->emitter and  $this->emitter->to($fd);
+        return $this;
     }
 
 }

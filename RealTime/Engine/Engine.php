@@ -46,20 +46,14 @@ class Engine
     public static function init($server)
     {
         $engine = Config::app('app.server.engine', 'socketio');
-        if(!isset(self::$engines[$engine])){
-            die('The engine does not exist');
-        }
-        //swoole服务
-        self::$server = $server;
-        //模块
-        self::$modules = Config::app('swoole.modules', 'Index');
+        isset(self::$engines[$engine]) or die('The engine does not exist');
+        self::$server = $server;//swoole服务
+        self::$modules = Config::app('swoole.modules', 'Index');//模块
         self::$modules = explode(',' , self::$modules);
         self::$modules = array_flip(self::$modules);
         self::$modules['Index'] = 0;
-        //实例化引擎
-        self::$engine = new self::$engines[$engine]($server, self::$modules);
-        //路由
-        self::$route = new Route();
+        self::$engine = new self::$engines[$engine]($server, self::$modules);//实例化引擎
+        self::$route = new Route();//路由
     }
 
     /**
@@ -71,8 +65,6 @@ class Engine
     {
         $events = ['open'=>1, 'connect'=>1];//回调函数
         !isset($events[$event]) and $params['callable'] = [self::$route,  'on'.ucfirst($event)];
-        call_user_func_array([self::$engine, 'on'.ucfirst($event)], $params);//执行事件
+        return call_user_func_array([self::$engine, 'on'.ucfirst($event)], $params);//执行事件
     }
-
-
 }

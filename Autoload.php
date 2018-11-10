@@ -13,5 +13,3 @@ spl_autoload_register(function ($classname)
                 dirname(__FILE__) .'/' ;
     include_once str_replace('\\', '/', $basePath.$classname.'.php');
 });
-
-

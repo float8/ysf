@@ -8,53 +8,49 @@
 
 namespace RealTime\Engine\SocketIO\Engine;
 
-
 use Core\Utils\Tools\Fun;
+use RealTime\Engine\SocketIO\Emitter;
 
 trait Event
 {
     /**
-     * @desc 命名空间
-     * @var string
-     */
-    private $nsp = '/';
-
-    /**
      * @desc 监听数据包
-     * @param $data
-     * @param $callable
+     * @param string $data
+     * @param Emitter $emitter
+     * @param callable $callable
      */
-    private function _onPacket($data, $callable)
+    private function _onPacket($data, $emitter, $callable)
     {
+        $packet = $this->decodePacket($data);//解包
         try {
-            $packet = $this->decodePacket($data);//解包
             switch ($packet['type'])
             {
                 case 'message':
-                    $this->_onMessage($packet['data'], $callable);
+                    $this->_onMessage($emitter, $packet['data'], $callable);
                     break;
                 case 'ping':
-                    $this->sendPacket('pong');
+                    $emitter->writeBuffer('pong');
                     break;
             }
         } catch (\Exception $e) {
-
+            $emitter->emitError($e->getMessage());//发送错误包数据
         }
     }
 
     /**
      * @desc 消息
-     * @param $data
-     * @param $callable
+     * @param Emitter $emitter
+     * @param string $data
+     * @param callable $callable
      */
-    private function _onMessage($data, $callable)
+    private function _onMessage($emitter, $data, $callable)
     {
         $packet = $this->parser->decode($data);//解码
-        $this->nsp = $packet['nsp'];
+        $emitter->setNsp($packet['nsp']);//设置 namespace
         switch ($packet['type'])
         {
             case $this->parser::CONNECT:
-                $this->_onConnect($callable);
+                $this->_onConnect($emitter, $packet['nsp'], $callable);
                 break;
             case $this->parser::EVENT:
                 $this->_onEvent($packet, $callable);
@@ -64,36 +60,33 @@ trait Event
 
     /**
      * @desc 引擎链接事件
-     * @param $callable
+     * @param Emitter $emitter
+     * @param string $nsp
+     * @param callable $callable
      */
-    private function _onConnect($callable)
+    private function _onConnect($emitter, $nsp, $callable)
     {
-        $params = $this->routeEventParser();//路由解析器
+        $params = $this->routeEventParser($nsp);//路由解析器
         $this->_verifyModule($params['module']);//验证
-        //发送包数据
-        $this->sendPacket('message',
-            $this->parser->encode([
-                'type' => $this->parser::CONNECT,
-                'nsp' => $this->nsp
-            ])
-        );
-        $params['engine'] = $this;
+        $emitter->writeBuffer('message', [
+            'type' => $this->parser::CONNECT,
+            'nsp' => $nsp
+        ]);//发送包数据
         call_user_func($callable, 'connect', $params);
     }
 
     /**
      * @desc 事件处理
-     * @param $packet
-     * @param $callable
+     * @param array $packet
+     * @param callable $callable
      */
     private function _onEvent($packet, $callable)
     {
         $event = Fun::get($packet['data'], '0');//事件名称
         $this->_verifyEvent($event);//验证evnet是否合法
-        $params = $this->routeEventParser($event);//路由解析器
+        $params = $this->routeEventParser($packet['nsp'], $event);//路由解析器
         $this->_verifyModule($params['module']);//验证
         $params['data'] = array_slice($packet['data'], 1);//数据
-        $params['engine'] = $this;
         call_user_func($callable, 'event', $params);
     }
 
@@ -106,19 +99,19 @@ trait Event
         if (empty($event) || preg_match("/^[\w ]+$/", $event)) {//验证事件名称
             return ;
         }
-        $this->sendErrorPacket('Invalid event name');//发送错误包数据
+        new \Exception('Invalid event name');
     }
 
     /**
      * @desc 验证模块是否存在
-     * @param $module
+     * @param string $module
      */
     private function _verifyModule($module)
     {
         if(isset($this->modules[$module])) {
             return;
         }
-        $this->sendErrorPacket('Invalid namespace');//发送错误包数据
+        new \Exception('Invalid namespace');
     }
 
 }

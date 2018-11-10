@@ -49,18 +49,19 @@ class Handshake
 
     /**
      * @desc open handshake
+     * @param $emitter Emitter
      */
-    public function onOpen()
+    public function onOpen($emitter)
     {
-        $this->engine->sendPacket('open', json_encode([
-            'sid' => $this->sid(),
-            'upgrades'=> ['websocket'],
-            'pingInterval'=>$this->pingInterval,
-            'pingTimeout'=>$this->pingTimeout,
-        ]));//发送握手信息
-        $this->engine->sendPacket('message',
-            $this->engine->packet($this->engine->parser::CONNECT)
-        );//发送默认命名空间
+        $emitter->writeBuffer('open', json_encode([//config info
+                'sid' => $this->sid(),
+                'upgrades'=> ['websocket'],
+                'pingInterval'=>$this->pingInterval,
+                'pingTimeout'=>$this->pingTimeout])
+        );
+        $emitter->writeBuffer('message', [//namespace /
+                'type' => $this->engine->parser::CONNECT
+        ]);
     }
 
 }

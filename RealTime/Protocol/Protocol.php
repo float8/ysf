@@ -77,15 +77,11 @@ class Protocol
      */
     private static function server()
     {
-        $name = Config::app('app.server.name');//获取服务名称
-        if(!isset(self::$serverClass[$name])) {
-            die('There is no service!');
-        }
+        $name = Config::app('app.server.name', 'websocket');//获取服务名称
+        isset(self::$serverClass[$name]) or die('There is no service!');
         $className = self::$serverClass[$name];//服务名称
         $client = Config::app('app.server.client', 0);//是否为客户端
-        if($client){
-            $className .= 'Client';
-        }
+        $client and $className .= 'Client';
         $config = Config::app('app.server.config', []);//获取服务配置信息
         self::$server =  new $className($config);//实例化服务
     }

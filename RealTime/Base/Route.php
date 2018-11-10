@@ -13,6 +13,7 @@ use Core\Base\Log;
 use Core\Utils\Tools\Fun;
 use Error;
 use Exception;
+use RealTime\Engine\SocketIO\Emitter;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\WebSocket\Frame;
@@ -39,36 +40,35 @@ class Route
     private $page_error = YSF_PATH . '/Core/Error/error';
 
     /**
-     *
      * @desc 模块的打开连接事件
+     * @param $emitter
      * @param $route
      */
-    private function _connect($route)
+    private function _connect($emitter, $route)
     {
         if($connect = Loader::module('Connect', $route['module']) && $route['module'] != 'Index'){
+            $connect->emitter = $emitter;
             call_user_func_array([$connect, 'execute'], array_slice(func_get_args(), 1));
         }
     }
 
     /**
-     * @desc 执行 controller
+     * @desc event route
+     * @param $emitter
      * @param $route
      */
-    private function _event($route)
+    private function _event($emitter, $route)
     {
         //没有controller
         $controller = Loader::controller('Event', $route['controller'], 'Controller', $route['module']);
-        if(!$controller) {
-            goto _return;
-        }
-
+        $controller or $this->throw('"'.$route['controller'].'Controller" controller does not exist', 404);
         $action = $route['action'];
         $_route = array_slice($route, 0, 3);//设置路由
         $controller->route = $_route;
 
         //controller action 为同一文件时
         if(empty($controller->actions) || !isset($controller->actions[$action])) {
-            $controller->engine = $route['engine'];
+            $controller->emitter = $emitter;
             $method = $route['action'].$this->actionSuffix;
             method_exists($controller, $method) and call_user_func_array([$controller, $method],
                 array_merge($route['data'], array_slice(func_get_args(), 1)));
@@ -77,10 +77,8 @@ class Route
 
         //action 分离时
         $action = Loader::action($controller->actions[$action], $action, 'Action', $route['module']);
-        if(!$action){
-            goto _return;
-        }
-        $action->engine = $route['engine'];
+        $action or $this->throw('"'.$action.'Action" action does not exist', 404);
+        $action->emitter = $emitter;
         $action->route = $_route;
         $action->controller = $controller;
         call_user_func_array([$action, 'execute'],
@@ -91,15 +89,16 @@ class Route
     /**
      * @desc socket事件
      * @param $event
+     * @param $emitter
      * @param $route
      * @param Server $server
      * @param int $fd
      * @param int $reactor_id
      * @param string $data
      */
-    public function onReceive($event, $route, Server $server, int $fd, int $reactor_id, string $data)
+    public function onReceive($event, $emitter, $route, Server $server, int $fd, int $reactor_id, string $data)
     {
-        call_user_func([$this, '_'.$event], $route, $server, $fd, $reactor_id, $data);
+        call_user_func([$this, '_'.$event], $emitter, $route, $server, $fd, $reactor_id, $data);
     }
 
     /**
@@ -107,63 +106,63 @@ class Route
      * @used-by _event
      * @desc websocket 事件
      * @param $event
+     * @param Emitter $emitter
      * @param $route
      * @param Server $server
      * @param Frame $frame
      */
-    public function onMessage($event, $route, Server $server, Frame $frame)
+    public function onMessage($event, $emitter, $route, Server $server, Frame $frame)
     {
-        call_user_func([$this, '_'.$event], $route, $server, $frame);
+        try {
+            call_user_func([$this, '_'.$event], $emitter, $route, $server, $frame);
+        } catch (\Exception $e) {
+            $emitter->emitError($e->getMessage());
+        }
     }
 
     /**
      * @desc 监听http请求
-     * @param array $route
+     * @param $emitter
+     * @param $route
      * @param Request $request
      * @param Response $response
      */
-    public function onRequest($route, Request $request, Response $response)
+    public function onRequest($emitter, $route, Request $request, Response $response)
     {
-        $this->write($response, function () use($route, $request){
-            $this->web($route, $request);
+        $this->write($response, function () use($route, $request, $emitter){
+            $this->web($emitter, $route, $request);
         });
     }
 
     /**
      * @desc web
+     * @param $emitter
      * @param $route
      * @param Request $request
      * @throws Exception
      */
-    private function web($route, Request $request)
+    private function web($emitter, $route, Request $request)
     {
         $request->get = $request->get ?  array_merge($request->get, $route['query']) : $route['query'];
-        //没有controller
         $controller = Loader::controller('Web', $route['controller'], 'Controller', $route['module']);
-        if(!$controller) {
-            throw new Exception('"'.$route['controller'].'Controller" controller does not exist', 404);
-        }
+        $controller or $this->throw('"'.$route['controller'].'Controller" controller does not exist', 404);
         $action = $route['action'];
         $_route = array_slice($route, 0, 3);//设置路由
         $controller->route = $_route;
 
         //controller action 为同一文件时
         if(empty($controller->actions) || !isset($controller->actions[$action])) {
-            $controller->engine = $route['engine'];
+            $controller->emitter = $emitter;
             $method = $route['action'].$this->actionSuffix;
-            if(!method_exists($controller, $method)){
-                throw new Exception('"'.$action.'Action" action does not exist', 404);
-            }
+            method_exists($controller, $method) or $this->throw('"'.$action.'Action" action does not exist', 404);
             call_user_func_array([$controller, $method], array_slice(func_get_args(), 1));
             goto _return;
         }
 
         //action 分离时
         $action = Loader::action($controller->actions[$action], $action, 'Action', $route['module']);
-        if(!$action){
-            throw new Exception('"'.$action.'Action" action does not exist', 404);
-        }
-        $action->engine = $route['engine'];
+        $action or $this->throw('"'.$action.'Action" action does not exist', 404);
+        $action->emitter = $emitter;
         $action->route = $_route;
         $action->controller = $controller;
         call_user_func_array([$action, 'execute'], array_slice(func_get_args(), 1));
@@ -203,14 +202,17 @@ class Route
         if(!Fun::get($errors, 'debug', true)){
             return ;
         }
-        $code = $e->getCode();
-        $message = $e->getMessage();
-        $line = $e->getLine();
-        $file = $e->getFile();
-        $trace = $e->getTraceAsString();
-        $response->status($code ?: 500);
+        $data = [
+            'code' => $e->getCode(),
+            'message'=> $e->getMessage(),
+            'line' => $e->getLine(),
+            'file'=> $e->getFile(),
+            'trace'=> $e->getTraceAsString()
+        ];
+        extract($data);
+        $response->status($data['code'] ?: 500);
         //app 404 page
-        if($code == 404 && isset($errors[404])){
+        if($data['code'] == 404 && isset($errors[404])){
             $pageFile = APP_PATH . $errors['404'];
             goto _include;
         }
@@ -231,5 +233,16 @@ class Route
         }
         _include :
         include $pageFile.'.phtml';
+    }
+
+    /**
+     * @desc 抛异常
+     * @param $message
+     * @param int $code
+     * @throws Exception
+     */
+    public function throw($message, $code = 0)
+    {
+        throw new Exception($message, $code);
     }
 }

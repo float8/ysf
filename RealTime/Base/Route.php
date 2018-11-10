@@ -1,0 +1,235 @@
+<?php
+/**
+ * @desc:
+ * @author: wanghongfeng
+ * @date: 2018/11/8
+ * @time: 下午8:33
+ */
+
+namespace RealTime\Base;
+
+
+use Core\Base\Log;
+use Core\Utils\Tools\Fun;
+use Error;
+use Exception;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
+use Swoole\WebSocket\Frame;
+use Swoole\WebSocket\Server;
+
+class Route
+{
+    /**
+     * @desc action 后缀
+     * @var string
+     */
+    private $actionSuffix = 'Action';
+
+    /**
+     * @desc 500 错误页面
+     * @var string
+     */
+    private $page_500 = YSF_PATH . '/Core/Error/500';
+
+    /**
+     * @desc 错误页面
+     * @var string
+     */
+    private $page_error = YSF_PATH . '/Core/Error/error';
+
+    /**
+     *
+     * @desc 模块的打开连接事件
+     * @param $route
+     */
+    private function _connect($route)
+    {
+        if($connect = Loader::module('Connect', $route['module']) && $route['module'] != 'Index'){
+            call_user_func_array([$connect, 'execute'], array_slice(func_get_args(), 1));
+        }
+    }
+
+    /**
+     * @desc 执行 controller
+     * @param $route
+     */
+    private function _event($route)
+    {
+        //没有controller
+        $controller = Loader::controller('Event', $route['controller'], 'Controller', $route['module']);
+        if(!$controller) {
+            goto _return;
+        }
+
+        $action = $route['action'];
+        $_route = array_slice($route, 0, 3);//设置路由
+        $controller->route = $_route;
+
+        //controller action 为同一文件时
+        if(empty($controller->actions) || !isset($controller->actions[$action])) {
+            $controller->engine = $route['engine'];
+            $method = $route['action'].$this->actionSuffix;
+            method_exists($controller, $method) and call_user_func_array([$controller, $method],
+                array_merge($route['data'], array_slice(func_get_args(), 1)));
+            goto _return;
+        }
+
+        //action 分离时
+        $action = Loader::action($controller->actions[$action], $action, 'Action', $route['module']);
+        if(!$action){
+            goto _return;
+        }
+        $action->engine = $route['engine'];
+        $action->route = $_route;
+        $action->controller = $controller;
+        call_user_func_array([$action, 'execute'],
+            array_merge($route['data'], array_slice(func_get_args(), 1)));
+        _return:
+    }
+
+    /**
+     * @desc socket事件
+     * @param $event
+     * @param $route
+     * @param Server $server
+     * @param int $fd
+     * @param int $reactor_id
+     * @param string $data
+     */
+    public function onReceive($event, $route, Server $server, int $fd, int $reactor_id, string $data)
+    {
+        call_user_func([$this, '_'.$event], $route, $server, $fd, $reactor_id, $data);
+    }
+
+    /**
+     * @used-by _connect
+     * @used-by _event
+     * @desc websocket 事件
+     * @param $event
+     * @param $route
+     * @param Server $server
+     * @param Frame $frame
+     */
+    public function onMessage($event, $route, Server $server, Frame $frame)
+    {
+        call_user_func([$this, '_'.$event], $route, $server, $frame);
+    }
+
+    /**
+     * @desc 监听http请求
+     * @param array $route
+     * @param Request $request
+     * @param Response $response
+     */
+    public function onRequest($route, Request $request, Response $response)
+    {
+        $this->write($response, function () use($route, $request){
+            $this->web($route, $request);
+        });
+    }
+
+    /**
+     * @desc web
+     * @param $route
+     * @param Request $request
+     * @throws Exception
+     */
+    private function web($route, Request $request)
+    {
+        $request->get = $request->get ?  array_merge($request->get, $route['query']) : $route['query'];
+        //没有controller
+        $controller = Loader::controller('Web', $route['controller'], 'Controller', $route['module']);
+        if(!$controller) {
+            throw new Exception('"'.$route['controller'].'Controller" controller does not exist', 404);
+        }
+        $action = $route['action'];
+        $_route = array_slice($route, 0, 3);//设置路由
+        $controller->route = $_route;
+
+        //controller action 为同一文件时
+        if(empty($controller->actions) || !isset($controller->actions[$action])) {
+            $controller->engine = $route['engine'];
+            $method = $route['action'].$this->actionSuffix;
+            if(!method_exists($controller, $method)){
+                throw new Exception('"'.$action.'Action" action does not exist', 404);
+            }
+            call_user_func_array([$controller, $method], array_slice(func_get_args(), 1));
+            goto _return;
+        }
+
+        //action 分离时
+        $action = Loader::action($controller->actions[$action], $action, 'Action', $route['module']);
+        if(!$action){
+            throw new Exception('"'.$action.'Action" action does not exist', 404);
+        }
+        $action->engine = $route['engine'];
+        $action->route = $_route;
+        $action->controller = $controller;
+        call_user_func_array([$action, 'execute'], array_slice(func_get_args(), 1));
+        _return:
+    }
+
+    /**
+     * @desc 写数据
+     * @param Response $response
+     * @param $callable
+     */
+    private function write(Response $response, $callable)
+    {
+        ob_start();
+        try {
+            $callable();
+        } catch (Exception $e) {
+            $this->errorPage($e, $response);
+        } catch (Error $e) {
+            $this->errorPage($e, $response);
+        }
+        $content = ob_get_contents();
+        ob_end_clean();
+        $response->end($content);
+    }
+
+    /**
+     * @desc 500 error
+     * @param Exception $e
+     * @param Response $response
+     */
+    private function errorPage($e, Response $response)
+    {
+        Log::write(LOG_ERR, $e);
+        //获取配置信息
+        $errors = \Core\Base\Config::app('app.errors');
+        if(!Fun::get($errors, 'debug', true)){
+            return ;
+        }
+        $code = $e->getCode();
+        $message = $e->getMessage();
+        $line = $e->getLine();
+        $file = $e->getFile();
+        $trace = $e->getTraceAsString();
+        $response->status($code ?: 500);
+        //app 404 page
+        if($code == 404 && isset($errors[404])){
+            $pageFile = APP_PATH . $errors['404'];
+            goto _include;
+        }
+        //app 500 page
+        if(isset($errors[500])){
+            $pageFile = APP_PATH . $errors['500'];
+            goto _include;
+        }
+        // Exception page
+        if($e instanceof  Exception) {
+            $pageFile = $this->page_500;
+            goto _include;
+        }
+        //Error page
+        if($e instanceof  Error) {
+            $pageFile = $this->page_error;
+            goto _include;
+        }
+        _include :
+        include $pageFile.'.phtml';
+    }
+}

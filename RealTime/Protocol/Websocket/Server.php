@@ -65,7 +65,6 @@ class Server
     public function __construct($params)
     {
         $this->server = new \Swoole\WebSocket\Server($params['host'], $params['port']);//实例化swoole websocket服务
-        Engine::init($this->server);//初始化引擎
     }
 
     /**
@@ -82,21 +81,31 @@ class Server
     public function on()
     {
         foreach ($this->events as $event) {
-            //监听 reset event
-            if (isset($this->resetEvents[$event])) {
-                $this->server->on($event, function () use ($event) {
-                    $params = func_get_args();
-                    $emitter = Engine::on(strtolower($event), $params);//执行引擎的事件
-                    $object = Loader::swoole($event) and
-                    $object->emitter = $emitter and
-                    call_user_func_array([$object, 'execute'], $params); //执行系统事件
-                });
-                continue;
-            }
-            //执行系统事件
-            $object = Loader::swoole($event) and $this->server->on($event, function () use ($event, $object) {
+            if ($this->onResetEvent($event)) continue;//监听 reset event
+            $object = Loader::swoole($event) and //加载系统事件
+            $this->server->on($event, function () use ($event, $object) {
                 call_user_func_array([$object, 'execute'], func_get_args()); //执行系统事件
-            });
+            }); //执行系统事件
         }
+    }
+
+    /**
+     * @desc Reset Event
+     * @param $event
+     * @return bool
+     */
+    private function onResetEvent($event)
+    {
+        if(!isset($this->resetEvents[$event])) {
+            return false;
+        }
+        $this->server->on($event, function () use ($event) {
+            $params = func_get_args();
+            $emitter = Engine::on($event, $params);//执行引擎的事件
+            $object = Loader::swoole($event) and
+            $object->emitter = $emitter and
+            call_user_func_array([$object, 'execute'], $params); //执行系统事件
+        });
+        return true;
     }
 }

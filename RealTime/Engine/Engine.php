@@ -17,7 +17,9 @@ class Engine
      * @desc 引擎
      * @var array
      */
-    private static $engines = ['socketio'=>'\RealTime\Engine\SocketIO\Engine'];
+    private static $engines = [
+        'socketio'=>'\RealTime\Engine\SocketIO\Engine'
+    ];
 
     /**
      * @var \RealTime\Engine\SocketIO\Engine
@@ -51,7 +53,7 @@ class Engine
         self::$modules = Config::app('swoole.modules', 'Index');//模块
         self::$modules = explode(',' , self::$modules);
         self::$modules = array_flip(self::$modules);
-        self::$modules['Index'] = 0;
+        self::$modules +=['Index' => 0];
         self::$engine = new self::$engines[$engine]($server, self::$modules);//实例化引擎
         self::$route = new Route();//路由
     }
@@ -64,7 +66,7 @@ class Engine
     public static function on($event, $params)
     {
         $events = ['open'=>1, 'connect'=>1];//回调函数
-        !isset($events[$event]) and $params['callable'] = [self::$route,  'on'.ucfirst($event)];
-        return call_user_func_array([self::$engine, 'on'.ucfirst($event)], $params);//执行事件
+        isset($events[$event]) or $params += ['callable' => [self::$route,  'on'.$event]];
+        return call_user_func_array([self::$engine, 'on'.$event], $params);//执行事件
     }
 }

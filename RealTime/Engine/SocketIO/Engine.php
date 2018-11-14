@@ -38,13 +38,13 @@ class Engine
      * @var array
      */
     private $parsers = [
-        'socketio'=>'\RealTime\Engine\SocketIO\Parser\SocketIO',
+        'socketio'=>'\RealTime\Engine\SocketIO\Parser\Socketio',
         'msgpack'=>'\RealTime\Engine\SocketIO\Parser\Msgpack',
         'json'=>'\RealTime\Engine\SocketIO\Parser\Json',
     ];
 
     /**
-     * @var \RealTime\Engine\SocketIO\Parser\SocketIO|\RealTime\Engine\SocketIO\Parser\Msgpack|\RealTime\Engine\SocketIO\Parser\Json
+     * @var \RealTime\Engine\SocketIO\Parser\Socketio|\RealTime\Engine\SocketIO\Parser\Msgpack|\RealTime\Engine\SocketIO\Parser\Json
      */
     public $parser;
 
@@ -63,13 +63,11 @@ class Engine
     public function __construct($server, $modules)
     {
         $this->config = Config::app('app.server.socketio');//获取socketio配置信息
-        $parser = Fun::get($this->config, 'parser', 'socketio');//获取绑定的解析器
-        isset($this->parsers[$parser]) or die('The parser does not exist');
         $this->server = $server;
         $this->modules = $modules;
         $this->typesReverse = array_flip($this->types);
         $this->handshake = new Handshake($this, $this->config);//实例化握手
-        $this->parser = new $this->parsers[$parser]();//实例化解析器
+        $this->loadParser();//加载解析器
     }
 
     /**
@@ -92,12 +90,31 @@ class Engine
     public function packet($type, $data = null, $options = [])
     {
         $options['compress'] = Fun::get($options, 'compress', true);
-        $data = is_string($data) ? $data : $this->parser->encode($data);;
+        if(is_array($data)) {
+            $data['nsp'] = isset($data['nsp']) ? $data['nsp'] : '/';
+            $data = $this->parser->encode($data);
+        }
         $encode = $this->encodePacket([
             'type' => $type,
-            'data'=>$data,
+            'data'=> $data,
             'options' => $options
         ]);//编码
         return $encode;
+    }
+
+    /**
+     * @desc 加载解析器
+     */
+    private function loadParser()
+    {
+        $appparser = Fun::get($this->config, 'appparser');
+        if($appparser) {//加载应用的解析器
+            $this->parser = new $appparser();//实例化解析器
+            return ;
+        }
+        //加载框架的解析器
+        $parser = Fun::get($this->config, 'parser', 'socketio');//获取绑定的解析器
+        isset($this->parsers[$parser]) or die('The parser does not exist');
+        $this->parser = new $this->parsers[$parser]();//实例化解析器
     }
 }

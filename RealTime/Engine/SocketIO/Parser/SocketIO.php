@@ -11,7 +11,7 @@ namespace RealTime\Engine\SocketIO\Parser;
 
 use Core\Base\Exception;
 
-class SocketIO extends Base
+class Socketio extends Base
 {
     /**
      * @desc 数据包类型

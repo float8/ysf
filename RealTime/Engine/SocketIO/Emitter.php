@@ -84,6 +84,20 @@ class Emitter
     }
 
     /**
+     * @desc 发送消息
+     * @param $event
+     */
+    public function ack(int $id)
+    {
+        $this->writeBuffer('message', [
+            'type' => $this->engine->parser::ACK,
+            'id' => $id,
+            'nsp' => $this->nsp,
+            'data' => array_slice(func_get_args(), 1)
+        ]);
+    }
+
+    /**
      * @desc 发送错误信息
      * @param $data
      */
@@ -122,7 +136,10 @@ class Emitter
             return false;
         }
         $method = method_exists($this->engine->server, 'push') ? 'push' : 'send';
-        return call_user_func([$this->engine->server, $method], $fd, $data);
+        $params = is_numeric($data[0]) ?
+            [$fd, $data] :
+            [ $fd, $data, WEBSOCKET_OPCODE_BINARY];
+        return call_user_func_array([$this->engine->server, $method], $params);
     }
 
     /**

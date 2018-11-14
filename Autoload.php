@@ -6,10 +6,17 @@
  * @time: 上午10:39
  */
 
+define('__ROOT_DIR__', dirname(__FILE__));
+
 spl_autoload_register(function ($classname)
 {
-    $basePath = substr($classname, -5) == 'Model' ?
-                \Core\Base\Config::app('swoole.directory').'/models/' :
-                dirname(__FILE__) .'/' ;
-    include_once str_replace('\\', '/', $basePath.$classname.'.php');
+    $basedir = substr($classname, 0,-5);
+    if( $basedir.'Model' == $classname && $basedir[-1] != '\\' ) {
+        return include_once str_replace('\\', '/', __APP_DIR__.'/models/'.$basedir.'.php');
+    }
+    $basedir = substr($classname, 0,-6);
+    if($basedir.'Parser' == $classname && $basedir[-1] != '\\') {
+        return include_once str_replace('\\', '/', __APP_DIR__.'/parsers/'.$basedir.'.php');
+    }
+    include_once str_replace('\\', '/', __ROOT_DIR__.'/'.$classname.'.php');
 });

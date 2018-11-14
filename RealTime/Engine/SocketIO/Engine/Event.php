@@ -9,6 +9,7 @@
 namespace RealTime\Engine\SocketIO\Engine;
 
 use Core\Utils\Tools\Fun;
+use Exception;
 use RealTime\Engine\SocketIO\Emitter;
 
 trait Event
@@ -31,8 +32,13 @@ trait Event
                 case 'ping':
                     $emitter->writeBuffer('pong');
                     break;
+                case 'pong':
+                    $emitter->writeBuffer('ping');
+                    break;
+                case 'ack':
+                    break;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $emitter->emitError($e->getMessage());//发送错误包数据
         }
     }
@@ -53,6 +59,9 @@ trait Event
                 $this->_onConnect($emitter, $packet['nsp'], $callable);
                 break;
             case $this->parser::EVENT:
+            case $this->parser::ACK:
+            case $this->parser::BINARY_EVENT:
+            case $this->parser::BINARY_ACK:
                 $this->_onEvent($packet, $callable);
                 break;
         }
@@ -86,7 +95,8 @@ trait Event
         $this->_verifyEvent($event);//验证evnet是否合法
         $params = $this->routeEventParser($packet['nsp'], $event);//路由解析器
         $this->_verifyModule($params['module']);//验证
-        $params['data'] = array_slice($packet['data'], 1);//数据
+        $id = Fun::get($packet, 'id');
+        $params += ['id'=>$id, 'data' => array_slice($packet['data'], 1)];//数据
         call_user_func($callable, 'event', $params);
     }
 
@@ -99,7 +109,7 @@ trait Event
         if (empty($event) || preg_match("/^[\w ]+$/", $event)) {//验证事件名称
             return ;
         }
-        new \Exception('Invalid event name');
+        new Exception('Invalid event name');
     }
 
     /**
@@ -111,7 +121,7 @@ trait Event
         if(isset($this->modules[$module])) {
             return;
         }
-        new \Exception('Invalid namespace');
+        new Exception('Invalid namespace');
     }
 
 }

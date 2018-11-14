@@ -13,6 +13,7 @@ use Swoole\Http\Response;
 use Swoole\WebSocket\Frame;
 use Swoole\Server;
 
+
 trait Swoole
 {
     /**
@@ -25,9 +26,10 @@ trait Swoole
     public function onConnect(Server $server, int $fd, int $reactorId)
     {
         $emitter = $this->emitter($fd);
+        $server instanceof \Swoole\WebSocket\Server or
+        $this->handshake->on($emitter, 'socket');//握手
         return $emitter->flush();
     }
-
 
     /**
      * @desc 接收到数据时回调此函数，发生在worker进程中。
@@ -41,6 +43,10 @@ trait Swoole
     public function onReceive(Server $server, int $fd, int $reactor_id, string $data, $callable)
     {
         $emitter = $this->emitter($fd);
+        $params = array_slice(func_get_args(), 0, -1);
+        $this->_onPacket($data, $emitter, function ($event, $route) use($callable, $params, $emitter) {
+            call_user_func_array($callable, array_merge([$event ,$emitter, $route], $params));
+        });
         return $emitter->flush();
     }
 
@@ -53,7 +59,7 @@ trait Swoole
     public function onOpen(\Swoole\WebSocket\Server $server, Request $request)
     {
         $emitter = $this->emitter($request->fd);
-        $this->handshake->onOpen($emitter);//握手
+        $this->handshake->on($emitter, 'websocket');//握手
         return $emitter->flush();
     }
 
@@ -68,8 +74,8 @@ trait Swoole
     {
         $emitter = $this->emitter($frame->fd);
         $params = array_slice(func_get_args(), 0, -1);
-        $this->_onPacket($frame->data, $emitter, function ($event, $data) use($callable, $params, $emitter) {
-            call_user_func_array($callable, array_merge([$event ,$emitter, $data], $params));
+        $this->_onPacket($frame->data, $emitter, function ($event, $route) use($callable, $params, $emitter, $frame) {
+            call_user_func_array($callable, array_merge([$event ,$emitter, $route], $params));
         });
         return $emitter->flush();
     }
@@ -85,11 +91,8 @@ trait Swoole
     {
         $emitter = $this->emitter($request->fd);
         $route = $this->routeWebParser($request->server['path_info']);
-        $route['engine'] = $this;
         $params = array_slice(func_get_args(), 0, -1);
         call_user_func_array($callable, array_merge([$emitter, $route], $params));
         return $emitter->flush();
     }
-
-
 }

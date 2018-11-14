@@ -31,6 +31,17 @@ abstract class Controller
     }
 
     /**
+     * @desc ack
+     * @param $id
+     * @return mixed
+     */
+    public function ack($id)
+    {
+        $this->emitter and call_user_func_array([$this->emitter, 'ack'], func_get_args());
+        return $this;
+    }
+
+    /**
      * @desc emit error
      * @param $data
      */

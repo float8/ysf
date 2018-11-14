@@ -48,16 +48,18 @@ class Handshake
     }
 
     /**
-     * @desc open handshake
-     * @param $emitter Emitter
+     * @desc handshake
+     * @param Emitter $emitter
+     * @param string $upgrades
      */
-    public function onOpen($emitter)
+    public function on($emitter, $upgrades)
     {
         $emitter->writeBuffer('open', json_encode([//config info
                 'sid' => $this->sid(),
-                'upgrades'=> ['websocket'],
+                'upgrades'=> [$upgrades],
                 'pingInterval'=>$this->pingInterval,
-                'pingTimeout'=>$this->pingTimeout])
+                'pingTimeout'=>$this->pingTimeout
+            ])
         );
         $emitter->writeBuffer('message', [//namespace /
                 'type' => $this->engine->parser::CONNECT

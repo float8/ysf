@@ -82,7 +82,7 @@ class Route
         $action->route = $_route;
         $action->controller = $controller;
         call_user_func_array([$action, 'execute'],
-            array_merge($route['data'], array_slice(func_get_args(), 1)));
+            array_merge([$route['id']],$route['data'], array_slice(func_get_args(), 1)));
         _return:
     }
 

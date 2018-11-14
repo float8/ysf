@@ -9,13 +9,14 @@
 defined('APP_PATH') or die('"APP_PATH" constant not define');
 
 define('PROJECT_NAME', basename(APP_PATH));//项目名称
-define('YSF_PATH' , dirname(__FILE__));
+define('YSF_PATH' , defined(__ROOT_DIR__) ? __ROOT_DIR__ : dirname(__FILE__));
 
 use Core\Base\Config;
 use Core\Base\Hook;
 use Core\Base\Log;
 use Core\Utils\Tools\Fun;
 use RealTime\Base\Command;
+use RealTime\Base\Config as RConfig;
 use RealTime\Protocol\Protocol;
 
 class Ysf
@@ -29,13 +30,11 @@ class Ysf
         define('APP_EXT', 'swoole');//项目使用的扩展
         define('__ENVIRON__', get_cfg_var('swoole.environ') ?: 'master');//定义环境变量常量
 
-        \RealTime\Base\Config::config($config);//加载系统配置
-
+        RConfig::config($config);//加载系统配置
         self::debug();//debug
-
         Hook::init();//初始化钩子
         Command::execute();//执行命令
-        Protocol::start();//根据协议前启动程序
+        new Protocol();//根据协议前启动程序
     }
 
     /**

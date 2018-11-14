@@ -61,12 +61,10 @@ abstract class Redis
         $db = Instances::get('redis', [$this->_group, $this->_MasterSlave]);
         //不存在主从获取方式
         $db = empty($db) ? Instances::get('redis', [$this->_group]) : $db;
-
         //获取连接
         if( ($db && !$this->_reconnect) ||  ($db && $this->_reconnect && $this->ping($db)) ){
             return $db;
         }
-
         return $this->dbconnect();//联接数据库
     }
 
@@ -118,21 +116,17 @@ abstract class Redis
         if(empty($config)) { //不存在配置
             throw new Exception("There is no \"{$this->_group}\" group");
         }
-
         //是否存在主从配置
         $isMasterSlave = false;
         if (isset($config[$this->_MasterSlave])) {//存在主从配置
             $config = $config[$this->_MasterSlave];
             $isMasterSlave = true;
         }
-
         //redis 联接信息
         $hostname = Fun::get($config, 'hostname');//主机地址
         $port = Fun::get($config, 'port', 6379);//端口
-
         //连接
         $redis = new \Redis();
-
         //长连接设置
         $pconnect = Fun::get($config, 'pconnect');
         $cli_pconnect = Fun::get($config, 'cli_pconnect');
@@ -143,19 +137,16 @@ abstract class Redis
         } else {
             $redis->connect($hostname, $port);
         }
-
         //权限
         $auth = Fun::get($config, 'auth');
         if (!empty($auth)) {//授权
             $redis->auth($auth);
         }
-
         //选择数据库
         $dbindex = Fun::get($config, 'dbindex');
         if (is_numeric($dbindex)) {//数据库
             $redis->select($dbindex);
         }
-
         //保存数据库联接
         $isMasterSlave ?
             Instances::set('redis', $redis, [$this->_group, $this->_MasterSlave]) : //有主从配置
@@ -207,7 +198,6 @@ abstract class Redis
         if (empty($this->_slaveCmds)){
             return call_user_func_array([$this->master(), $name], $args);
         }
-
         //从
         $_name = strtolower($name);
         $_slaveCmds === null ? array_reverse($this->_slaveCmds) : [];

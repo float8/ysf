@@ -53,7 +53,7 @@ class Login
 
     public function __construct()
     {
-        $login = Config::app('yaf.app.login');
+        $login = Config::app('app.login');
 
         $this->ip = ClientServer::getIp();
         $this->ip = ip2long($this->ip);

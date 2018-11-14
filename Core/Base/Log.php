@@ -20,7 +20,7 @@ class Log
      */
     public static function request()
     {
-        $log = Config::app('yaf.app.log', true);//是否开启日志，默认开启
+        $log = Config::app('app.log', true);//是否开启日志，默认开启
         if(!$log) {
             return ;
         }
@@ -48,7 +48,7 @@ class Log
         static $filter = null;
         //$filter = null 获取过滤字段
         if (is_null($filter)) {
-            $filter = Config::app('yaf.app.filter');
+            $filter = Config::app('app.filter');
         }
         //$filter数据为空直接返回
         if (empty($filter)) {
@@ -84,24 +84,14 @@ class Log
         $trace = self::getTrace($message, $trace);//$trace 信息
         $traceString = is_object($message) ? $message->getTraceAsString() : ''; //获取trace字符串
         $message = is_object($message) ? $message->getMessage() : $message;//消息内容
-        //当应用存在钩子时触发
-        if(Hook::existAppHook('Log')) {
-            return Hook::triggerApp('Log', 'write',[
-                'level'=>$priority,
-                'logid'=>$logid,
-                'trace'=>$trace,
-                'traceString'=>$traceString,
-                'message'=>$message,
-            ]);
-        }
-        $log_local = Config::app('yaf.app.log_local');
-        $line = Fun::get($trace, 'line');//跟踪的行号
-        $file = Fun::get($trace, 'file');//跟踪的文件
-        $location = empty($file) ? "[{$line}]" : "[{$line}:{$file}]";//位置
-        $message = empty($traceString) ? $message : $message."\n".$traceString;
-        $message = date("Y-m-d H:i:s") . " {$logid} " . PROJECT_NAME . " {$location} {$message}";//消息
-        //写入系统日志
-        return syslog($priority | $log_local, $message);
+        //触发钩子记录日志
+        return Hook::trigger('BasicsHook', 'logWrite',[
+            'level'=>$priority,
+            'logid'=>$logid,
+            'trace'=>$trace,
+            'traceString'=>$traceString,
+            'message'=>$message,
+        ]);
     }
 
     /**
@@ -214,7 +204,7 @@ class Log
             return;
         }
         //如果是输入流并且是json,是否过滤
-        $inputJsonfilter = Config::app('yaf.app.inputJsonFilter', false);
+        $inputJsonfilter = Config::app('app.inputJsonFilter', false);
         if ($inputJsonfilter) {
             $data = json_decode($data, true);
             $data = is_array($data) ? self::filter($data) : null;
@@ -275,7 +265,7 @@ class Log
         $runtime = microtime(true) - self::$runTime;
         self::write(LOG_INFO, $runtime, ['line'=>'runtime']);
         //页面执行超时时间
-        $time_out = (float)Config::app('yaf.app.time_out');
+        $time_out = (float)Config::app('app.time_out');
         if ($runtime < $time_out) {
             return ;
         }
@@ -348,14 +338,14 @@ class Log
         }
         extract($params);
         $_404Codes = [\YAF\ERR\NOTFOUND\MODULE, \YAF\ERR\NOTFOUND\CONTROLLER, \YAF\ERR\NOTFOUND\ACTION];//404错误码
-        $errors = Config::app('yaf.app.errors');//获取配置信息
+        $errors = Config::app('app.errors');//获取配置信息
         $debug = Fun::get($errors, 'debug', true);//是否开启debug
-        $_404 = Fun::get($errors, '_404');
-        $_500 = Fun::get($errors, '_500');
+        $_404 = Fun::get($errors, '404');
+        $_500 = Fun::get($errors, '500');
         if (!$debug && in_array($params['code'], $_404Codes) && !empty($_404)) {//找不到页面
-            $page = $errors['_404'];
+            $page = $errors['404'];
         } else if (!$debug && !empty($_500)) {//500错误
-            $page =  $errors['_500'];
+            $page =  $errors['500'];
         }
         //开启debug模式、执行系统错误页面否则执行app错误页面
         $basePath = $debug ? str_replace('Base', 'Error', dirname(__FILE__)) : APP_PATH;

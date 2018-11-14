@@ -21,7 +21,7 @@ trait Tools {
      * @desc 记录开始时间
      */
     public function _startTime(){
-        $open_log = Config::app('yaf.app.mysql.open_log', true);
+        $open_log = Config::app('app.mysql.open_log', true);
         if($open_log){
             $this->_startTime = microtime(true);
         }
@@ -31,8 +31,8 @@ trait Tools {
      * @desc 写日志
      */
     public function _writeLog(){
-        $open_log = Config::app('yaf.app.mysql.open_log', true);//是否打开日志
-        $time_out = (float)Config::app('yaf.app.mysql.time_out', 0.5);//超时间
+        $open_log = Config::app('app.mysql.open_log', true);//是否打开日志
+        $time_out = (float)Config::app('app.mysql.time_out', 0.5);//超时间
         $runtime = microtime(true) - $this->_startTime;//sql执行时间
         if ($runtime > $time_out) {//记录超时日志
             $time_out = $runtime - $time_out;

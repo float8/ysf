@@ -105,6 +105,7 @@ class Server
             $object = Loader::swoole($event) and
             $object->emitter = $emitter and
             call_user_func_array([$object, 'execute'], $params); //执行系统事件
+            $object and $object->emitter->flush();//写数据
         });
         return true;
     }

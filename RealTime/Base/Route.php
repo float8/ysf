@@ -48,7 +48,7 @@ class Route
     {
         if($connect = Loader::module('Connect', $route['module']) && $route['module'] != 'Index'){
             $connect->emitter = $emitter;
-            call_user_func_array([$connect, 'execute'], array_slice(func_get_args(), 1));
+            call_user_func_array([$connect, 'execute'], array_slice(func_get_args(), 2));
         }
     }
 
@@ -71,7 +71,7 @@ class Route
             $controller->emitter = $emitter;
             $method = $route['action'].$this->actionSuffix;
             method_exists($controller, $method) and call_user_func_array([$controller, $method],
-                array_merge($route['data'], array_slice(func_get_args(), 1)));
+                array_merge([$route['id']], $route['data'], array_slice(func_get_args(), 2)));
             goto _return;
         }
 
@@ -82,7 +82,7 @@ class Route
         $action->route = $_route;
         $action->controller = $controller;
         call_user_func_array([$action, 'execute'],
-            array_merge([$route['id']],$route['data'], array_slice(func_get_args(), 1)));
+            array_merge([$route['id']], $route['data'], array_slice(func_get_args(), 2)));
         _return:
     }
 
@@ -129,8 +129,8 @@ class Route
      */
     public function onRequest($emitter, $route, Request $request, Response $response)
     {
-        $this->write($response, function () use($route, $request, $emitter){
-            $this->web($emitter, $route, $request);
+        $this->write($response, function () use($route, $request, $emitter, $response){
+            $this->web($emitter, $route, $request, $response);
         });
     }
 
@@ -139,9 +139,9 @@ class Route
      * @param $emitter
      * @param $route
      * @param Request $request
-     * @throws Exception
+     * @param Response $response
      */
-    private function web($emitter, $route, Request $request)
+    private function web($emitter, $route, Request $request,Response $response)
     {
         $request->get = $request->get ?  array_merge($request->get, $route['query']) : $route['query'];
         $controller = Loader::controller('Web', $route['controller'], 'Controller', $route['module']);
@@ -155,7 +155,7 @@ class Route
             $controller->emitter = $emitter;
             $method = $route['action'].$this->actionSuffix;
             method_exists($controller, $method) or $this->throw('"'.$action.'Action" action does not exist', 404);
-            call_user_func_array([$controller, $method], array_slice(func_get_args(), 1));
+            call_user_func_array([$controller, $method], array_slice(func_get_args(), 2));
             goto _return;
         }
 
@@ -165,7 +165,7 @@ class Route
         $action->emitter = $emitter;
         $action->route = $_route;
         $action->controller = $controller;
-        call_user_func_array([$action, 'execute'], array_slice(func_get_args(), 1));
+        call_user_func_array([$action, 'execute'], array_slice(func_get_args(), 2));
         _return:
     }
 

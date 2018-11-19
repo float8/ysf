@@ -112,13 +112,14 @@ class Emitter
 
     /**
      * @param $type
-     * @param $data
+     * @param $packet
      */
-    public function writeBuffer($type, $data = null)
+    public function writeBuffer($type, $packet = null)
     {
-        $data = $this->engine->packet($type, $data);
+        $data = $this->engine->packet($type, $packet);
         $this->writeBuffer[] = [
             'fd' => $this->getFd(),
+            'event' => isset($packet['data'][0]) ? $packet['data'][0] : null,
             'data' => $data
         ];
         return $this;
@@ -151,7 +152,7 @@ class Emitter
         if (empty($this->writeBuffer)) {
             return $this;
         }
-        $writeBuffer= $this->writeBuffer;
+        $writeBuffer = $this->writeBuffer;
         $this->writeBuffer = [];
         foreach ($writeBuffer as $data) {
             $this->send($data['fd'], $data['data']);

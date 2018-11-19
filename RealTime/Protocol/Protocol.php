@@ -61,6 +61,9 @@ class Protocol
     {
         $sets = ['daemonize' => Command::getDaemonize()];//守护进程化
         $sets += Config::app('swoole.set', []);//获取配置选项
+        $sets = method_exists($this->server, 'set') ?
+                $this->server->set($sets) :
+                $sets;
         $this->server->server->set($sets);//添加swoole服务的设置
     }
 

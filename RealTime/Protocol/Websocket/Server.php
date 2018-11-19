@@ -108,4 +108,23 @@ class Server
         });
         return true;
     }
+
+    /**
+     * @desc set config
+     * @param $config
+     * @return mixed
+     */
+    public function set($config)
+    {
+        $config['enable_static_handler'] =
+            isset($config['enable_static_handler']) ?
+            $config['enable_static_handler'] :
+            true;
+
+        $config['document_root'] =
+            isset($config['document_root']) ?
+                $config['document_root'] :
+                './';
+        return $config;
+    }
 }

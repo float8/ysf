@@ -9,7 +9,7 @@
 defined('APP_PATH') or die('"APP_PATH" constant not define');
 
 define('PROJECT_NAME', basename(APP_PATH));//项目名称
-define('YSF_PATH' , defined(__ROOT_DIR__) ? __ROOT_DIR__ : dirname(__FILE__));
+define('YSF_PATH' , defined('__ROOT_DIR__') ? __ROOT_DIR__ : dirname(__FILE__));
 
 use Core\Base\Config;
 use Core\Base\Hook;

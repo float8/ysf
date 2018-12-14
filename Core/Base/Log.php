@@ -20,8 +20,7 @@ class Log
      */
     public static function request()
     {
-        $log = Config::app('app.log', true);//是否开启日志，默认开启
-        if(!$log) {
+        if(!Config::app('app.log', true)) {//关闭日志
             return ;
         }
         self::uri();//记录uri
@@ -77,7 +76,7 @@ class Log
      */
     public static function write(int $priority, $message, $trace = null)
     {
-        if (empty($message)) {
+        if (!Config::app('app.log', true) || empty($message)) {
             return false;
         }
         $logid = self::logid();//日志编号
